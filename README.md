@@ -9,7 +9,6 @@ wsclient = Protocollo(wsdl_url=PROT_URL,
                       password=PROT_PASSW,
                       aoo=PROTOCOLLO_AOO,
                       anno=2018, numero=234234)
-
 # recupera
 wsclient.get()
 
@@ -39,19 +38,8 @@ CREAZIONE_FASCICOLO_XML_PATH = '{}/generalizzati/creazione_fascicolo_peo.xml'.fo
 TEMPLATE_FLUSSO_ENTRATA_DIPENDENTE_PATH='{}/unical/peo_flusso_entrata.xml_precompilato.j2'.format(PROT_TEMPLATE_PATH)
 ALLEGATO_EXAMPLE_FILE='{}/esempi/sample.pdf'.format(PROT_TEMPLATE_PATH)
 
-# Flusso entrata per dipendenti
-# mittente persona fisica come dipendente, destinatario Unical
-parametri_ws_archipro_tmpl = '<Parametro nome="{nome}" valore="{valore}" />'
-
 # PROTOCOLLO, questi valori possono variare sulla base di come
 # vengono istruite le pratiche all'interno del sistema di protocollo di riferimento
-
-# Flusso entrata per dipendenti
-# mittente persona fisica come dipendente, destinatario Unical
-parametri_ws_archipro_tmpl = '<Parametro nome="{nome}" valore="{valore}" />'
-parametri_ws_archipro = [{'nome': 'agd', 'valore': '483'},
-                         {'nome': 'uo', 'valore': '1231'}]
-
 PROTOCOLLO_FASCICOLO_DEFAULT = '3'
 PROTOCOLLO_TITOLARIO_DEFAULT = '9095'
 PROTOCOLLO_CODICI_TITOLARI = (
@@ -64,11 +52,6 @@ PROTOCOLLO_AOO = 'AOO1'
 PROT_URL = 'http://url/protservice?wsdl'
 PROT_LOGIN = 'USERLOGIN'
 PROT_PASSW = 'USERPASS'
-
-# TEST USE
-PROT_URL = 'http://url/protservice?wsdl'
-PROT_TEST_LOGIN = 'USERLOGIN'
-PROT_TEST_PASSW = 'USERPASS'
 ````
 
 Protocollare
@@ -153,6 +136,5 @@ for i in DomandaBando.objects.filter(bando=bando):
 ## test veloce
 ````
 from pyWSArchiPRO.protocollo import test
-
 test()
 ````

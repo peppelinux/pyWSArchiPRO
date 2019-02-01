@@ -1,0 +1,82 @@
+# Full documentation for the schema is accessible at the URL
+#   http://w3id.org/publiccode/version/0.1
+
+publiccode-yaml-version: "http://w3id.org/publiccode/version/0.1"
+
+name: Peo
+url: "https://github.com/italia/pyWSArchiPRO.git"
+landingURL: "https://github.com/italia/pyWSArchiPRO"
+
+softwareVersion: "0.3"
+releaseDate: "2019-01-01"
+
+inputTypes:
+  - text/plain
+outputTypes:
+  - text/plain
+
+platforms:
+  - GNU/Linux
+
+# For a list of allowed values, check out w3id.org/publiccode/version/0.1/tags.html
+#
+# Only stick to these tags! If you need additional tags (localised),
+# you have the chance of adding them under the description/freeTags key
+tags:
+  - protocollo informatico
+  - WSArchiPRO
+
+usedBy:
+  - Università della Calabria
+
+# roadmap: "https://github.com/italia/django-peo/roadmap"
+
+developmentStatus: stable
+softwareType: "standalone"
+
+
+description:
+  eng:
+    localisedName: pyWSArchiPRO
+    genericName: pyWSArchiPRO
+    shortDescription: >
+          Protocollo informatico WebService Python Client
+
+    longDescription: >
+          Protocollo informatico WebService Python Client
+
+    # documentation: "https://peo.unical.it/docs"
+    # apiDocumentation: "https://docs.djangoproject.com/en/2.1/"
+
+    featureList:
+       - Protocollo nuovo documento
+       - Ricerca e Download documento protocollato
+       - Autenticazione SAML2
+
+
+legal:
+  license: GPL-3.0-or-later        # SPDX expression of license
+  mainCopyrightOwner: Università della Calabria
+  repoOwner: Università della Calabria
+  authorsFile: AUTHORS
+
+maintenance:
+  type: "contract"
+
+  contacts:
+    - name: Unical ICT
+      email: "ict@unical.it"
+      affiliation: Università della Calabria
+
+
+localisation:
+  localisationReady: no
+  availableLanguages:
+    - ita
+it:
+
+  conforme:
+    accessibile: yes
+    interoperabile: yes
+    sicuro: yes
+    privacy: yes
