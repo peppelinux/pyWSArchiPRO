@@ -54,7 +54,7 @@ PROT_LOGIN = 'USERLOGIN'
 PROT_PASSW = 'USERPASS'
 ````
 
-Protocollare
+#### Protocollare, esempio in Django
 ````
 from django.conf import settings
 
