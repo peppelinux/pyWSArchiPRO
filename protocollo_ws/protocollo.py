@@ -252,7 +252,7 @@ class WSArchiPROClient(object):
 
     def escape_string(self, word):
         word = word[:PROT_MAX_LABEL_LENGHT]
-        for c in UNALLOWED_CHARS:
+        for c in PROT_UNALLOWED_CHARS:
             # word = word.replace(c, '\\{}'.format(c))
             word = word.replace(c, '')
         return word
