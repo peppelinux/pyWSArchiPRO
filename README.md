@@ -1,6 +1,11 @@
 # pyWSArchiPRO
 Protocollazioni e recupero Documenti da WSArchiPRO con Python
 
+## Installazione
+````
+pip install git+https://github.com/UniversitaDellaCalabria/pyWSArchiPRO
+````
+
 ## Esempio di Protocollazione
 ````
 from protocollo_ws.protocollo import Protocollo
