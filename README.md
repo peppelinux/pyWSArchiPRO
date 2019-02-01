@@ -57,6 +57,8 @@ PROT_PASSW = 'USERPASS'
 #### Protocollare, esempio in Django
 ````
 from django.conf import settings
+from django.utils import timezone
+from io import BytesIO
 
 peo_dict = {'aoo': settings.PROTOCOLLO_AOO,
             'oggetto':'Partecipazione {} - {}'.format(bando, dipendente),
