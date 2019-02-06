@@ -1,5 +1,4 @@
 # © 2018 Giuseppe De Marco <giuseppe.demarco@unical.it>
-# © 2018 Francesco Filicetti <francesco.filicetti@unical.it>
 
 # SPDX-License-Identifier: GPL-3.0
 
@@ -8,13 +7,13 @@ import io
 import os
 
 from zeep import Client
-from protocollo_ws.settings import (TEMPLATE_FLUSSO_ENTRATA_DIPENDENTE_PATH,
+from protocollo_ws.utils import clean_string
+from protocollo_ws.settings import (PROT_TEMPLATE_FLUSSO_ENTRATA_DIPENDENTE_PATH,
                                     PROT_DOC_ENCODING,
-                                    PROT_MAX_LABEL_LENGHT,
-                                    ALLEGATO_EXAMPLE_FILE,
-                                    PROT_UNALLOWED_CHARS)
-
-
+                                    PROT_ALLEGATO_EXAMPLE_FILE,
+                                    PROT_PARAMETRI_TMPL_ROW,
+                                    PROT_PARAMETRI)
+    
 class WSArchiPROClient(object):
     _ALLEGATO_XML = """
                     <Documento nome="{nome}" id="{allegato_id}">
@@ -22,8 +21,20 @@ class WSArchiPROClient(object):
                           <TipoDocumento>{tipo}</TipoDocumento>
                     </Documento>
                     """
+    _FASCICOLO_XML = """
+                     <Fascicolo>
+                      <CodiceTitolario>{id_titolario}</CodiceTitolario>  
+                      <Oggetto>{oggetto}</Oggetto>
+                      <Soggetto>{soggetto}</Soggetto>
+                      <Note>{note}</Note>
+                    <ApplicativoProtocollo nome="ArchiPRO">
+                        {parametri_rows}
+                    </ApplicativoProtocollo>
+                    </Fascicolo>
+                    """
     _ALLEGATO_SPLIT_STRING = "<!-- Allegati -->"
-    REQUIRED_ATTRIBUTES = ['fascicolo_numero',
+    REQUIRED_ATTRIBUTES = ['aoo',
+                           'fascicolo_numero',
                            'fascicolo_anno',
                            'id_titolario',
 
@@ -32,12 +43,12 @@ class WSArchiPROClient(object):
                            'denominazione_persona',
                            'nome_doc',
                            'tipo_doc']
-    
+
     def __init__(self,
                  wsdl_url,
                  username,
                  password,
-                 template_xml_flusso=TEMPLATE_FLUSSO_ENTRATA_DIPENDENTE_PATH,
+                 template_xml_flusso=open(PROT_TEMPLATE_FLUSSO_ENTRATA_DIPENDENTE_PATH).read(),
                  required_attributes=REQUIRED_ATTRIBUTES,
                  **kwargs):
         """
@@ -45,7 +56,7 @@ class WSArchiPROClient(object):
         """
 
         for attr in required_attributes:
-            setattr(self, attr, kwargs.get(attr))
+            setattr(self, attr, clean_string(kwargs.get(attr)))
 
         #self.doc_fopen = kwargs.get('fopen')
         #
@@ -86,50 +97,48 @@ class WSArchiPROClient(object):
         self.login = self.client.service.login(self.username,
                                                self.password)
         # TODO: non torna più OK bensì una stringa b64, da aggiornare qui
-        # assert self.login.DST == 'OK'
+        assert self.login.DST
         return self.login.DST
 
     def is_connected(self):
         if self.client and self.login:
             return True
 
+    def assure_connection(self):
+        # chek if it is connected and authn
+        if not self.is_connected():
+            self.connect()
+
     def crea_fascicolo(self, template):
         """
-        A template could be:
-
-        <Fascicolo>
-          <CodiceTitolario>9095</CodiceTitolario>  
-          <Oggetto>Una tantum docenti 2019</Oggetto>
-          <Soggetto>Una tantum docenti 2019</Soggetto>
-          <Note></Note>
-        <ApplicativoProtocollo nome="ArchiPRO">
-        <Parametro nome="agd" valore="483" />
-        <Parametro nome="uo" valore="1231" />
-        </ApplicativoProtocollo>
-        </Fascicolo>
+        Crea un fascicolo usando il template self._FASCICOLO_XML
         """
+        conf_fasciolo = {'id_titolario': self.id_titolario,
+                         'oggetto': self.oggetto,
+                         'soggetto': self.soggetto if hasattr(self, 'soggetto') \
+                                     else self.oggetto,
+                         'note': self.note if hasattr(self, 'note') else '',
+                         'parametri_rows': ''.join([PROT_PARAMETRI_TMPL_ROW.format(**par) \
+                                                    for par in PROT_PARAMETRI])}
         if isinstance(template, str):
-            template = template.encode(PROT_DOC_ENCODING)
-        # iofasc = io.StringIO()
-        # iofasc.write(template)
+            template = template.format(**conf_fasciolo)
+        else:
+            template = template.decode(PROT_DOC_ENCODING).format(**conf_fascicolo)
+        template = template.encode(PROT_DOC_ENCODING)
         return self.client.service.creazioneFascicolo(self.login.DST, arg1=template)
     
     def get(self):
         """
         returns a dict like:
-
-        {
-            'contentType': None,
-            'contenutoFile': b'%PDF-1.4\n.......[]....'
-            'error_description': None,
-            'error_number': 0,
-            'nomeFile': 'mansioni_pubblico_impiego.pdf',
-            'tipoFile': None
-        }
+        {'contentType': None,
+         'contenutoFile': b'%PDF-1.4\n.......[]....'
+         'error_description': None,
+         'error_number': 0,
+         'nomeFile': 'mansioni_pubblico_impiego.pdf',
+         'tipoFile': None}
         """
         # chek if it is connected and authn
-        if not self.is_connected():
-            self.connect()
+        self.assure_connection()
 
         if not self.anno or \
            not self.numero:
@@ -143,7 +152,6 @@ class WSArchiPROClient(object):
         rec = self.client.service.recuperoDocsProtocollo(DST=self.login.DST,
                                                          lngAnnoPG=self.anno,
                                                          lngNumPG=self.numero)
-        
         self.oggetto = rec['oggetto']
         self.fascicolo_numero = rec['numFascicolo']
         self.fascicolo_anno = rec['annoFascicolo']
@@ -165,26 +173,22 @@ class WSArchiPROClient(object):
                                        descrizione=f['nomeFile'],
                                        fopen=allegato,
                                        tipo=f['tipoFile'])
-                
         return rec
 
     def dump_files(self, fpath="/tmp"):
         self.get()
         dir_path = os.path.sep.join((fpath,
                                      str(self.numero)))
-
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
         dprinc_path = os.path.sep.join((dir_path,
                                         self.nome_doc))
         with open(dprinc_path, 'wb') as f:
             f.write(self.docPrinc.read())
-
         for i in self.allegati:
             apath = os.path.sep.join((dir_path, i['nome']))
             with open(apath, 'wb') as f:
                 f.write(i['ns0:attach'].fileContent)
-
         return fpath
 
     def verifica(self):
@@ -209,8 +213,8 @@ class WSArchiPROClient(object):
                raise Exception('tipo_doc e nome_doc devono essere configurati insieme')
 
         if nome_doc and tipo_doc:
-            self.nome_doc = self.escape_string(nome_doc)
-            self.tipo_doc = tipo_doc
+            self.nome_doc = clean_string(nome_doc)
+            self.tipo_doc = clean_string(tipo_doc)
         # altrimenti utilizza quelle definite nel costruttore
         
         self.docPrinc = fopen
@@ -221,21 +225,20 @@ class WSArchiPROClient(object):
         """
         renderizza il documento che descrive il flusso di protocollazione (dataXML)
         """
-        f = open(self.template_xml_flusso)
-        xml_flusso = f.read().format(**self.__dict__)
-        f.close()
-        
+        if not isinstance(self.template_xml_flusso, str):
+            self.template_xml_flusso = self.template_xml_flusso.decode(PROT_DOC_ENCODING)
+
         # renderizzo gli allegati, se presenti, nel flusso XML
         if self.allegati:
             allegati_xml = []
             for al in self.allegati:
                 allegati_xml.append(self.render_AllegatoXML(al))
-
-            xml_flusso_splitted = xml_flusso.split(self._ALLEGATO_SPLIT_STRING)
-            return ''.join((xml_flusso_splitted[0],
-                            ''.join(allegati_xml),
-                            xml_flusso_splitted[1]))
-        return xml_flusso
+            xml_flusso_splitted = self.template_xml_flusso.split(self._ALLEGATO_SPLIT_STRING)
+            con_allegati = ''.join((xml_flusso_splitted[0],
+                                    ''.join(allegati_xml),
+                                    xml_flusso_splitted[1]))
+            return con_allegati.format(**self.__dict__)
+        return self.template_xml_flusso.format(**self.__dict__)
 
     def _encode_filestream(self, fopen, enc=False):
         if enc:
@@ -249,29 +252,20 @@ class WSArchiPROClient(object):
                 'descrizione': None,
                 'tipo':        None,
                 'file':        None}
-
-    def escape_string(self, word):
-        word = word[:PROT_MAX_LABEL_LENGHT]
-        for c in PROT_UNALLOWED_CHARS:
-            # word = word.replace(c, '\\{}'.format(c))
-            word = word.replace(c, '')
-        return word
     
     def aggiungi_allegato(self, nome,
                                 descrizione,
                                 fopen,
                                 tipo='Allegato'):
         """
-            nome: deve essere con l'estenzione esempio: .pdf altrimenti errore xml -201!
-            il fopen popola la lista degli allegati.
+        nome: deve essere con l'estenzione esempio: .pdf altrimenti errore xml -201!
+        il fopen popola la lista degli allegati.
         """
         if len(nome.split('.')) == 1:
-            raise Exception("'nome' deve essere con l'estenzione esempio: .pdf altrimenti errore xml -201!")
+            raise Exception(("'nome' deve essere con l'estensione "
+                             "esempio: .pdf altrimenti errore xml -201!"))
+        self.assure_connection()
         
-        # chek if it is connected and authn
-        if not self.is_connected():
-            self.connect()
-
         allegato_idsum = 2
         # recheck id seq
         for al in self.allegati:
@@ -280,13 +274,13 @@ class WSArchiPROClient(object):
         
         allegato_dict = self._get_allegato_dict()
         allegato_dict['allegato_id'] = len(self.allegati) + allegato_idsum
-        allegato_dict['nome']        = self.escape_string(nome)
-        allegato_dict['descrizione'] = self.escape_string(descrizione)
-        allegato_dict['tipo']        = tipo
+        allegato_dict['nome']        = clean_string(nome)
+        allegato_dict['descrizione'] = clean_string(descrizione)
+        allegato_dict['tipo']        = clean_string(tipo)
         
         allegato = self.client.wsdl.types.get_type(qname='ns0:attach')()
         allegato.id = len(self.allegati) + allegato_idsum
-        allegato.fileName = self.escape_string(nome)
+        allegato.fileName = clean_string(nome)
         allegato.fileContent = self._encode_filestream(fopen)
         allegato_dict['ns0:attach']  = allegato
         
@@ -297,28 +291,22 @@ class WSArchiPROClient(object):
         """
         Se "force" è disabilitato non sarà possibile protocollare un
         documento già protocollato.
-
         Se force è abilitato riprotocolla il documento e aggiorna il numero
-
-        returns a dict like:
-
-        {
-            'annoProt': 2018,
-            'annoProtUff': 0,
-            'dataProt': None,
-            'error_description': None,
-            'error_number': 0,
-            'numProt': 183,
-            'numProtUff': 0,
-            'siglaUff': None
-        }
+        Torna un dizionario come segue:
+        {'annoProt': 2018,
+         'annoProtUff': 0,
+         'dataProt': None,
+         'error_description': None,
+         'error_number': 0,
+         'numProt': 183,
+         'numProtUff': 0,
+         'siglaUff': None}
         """
         # check if it is valid
         self.is_valid()
 
         # chek if it is connected and authn
-        if not self.is_connected():
-            self.connect()
+        self.assure_connection()
 
         if not force:
             if self.numero or self.anno:
@@ -364,7 +352,7 @@ def test(allegati=True):
     Procedura di esempio per esemplificare una sessione tipica di protocollo
     """
     allegati=1
-    peo_dict = { 'aoo': settings.PROTOCOLLO_AOO,
+    peo_dict = { 'aoo': settings.PROT_AOO,
                  'oggetto':'Partecipazione Bando PEO',
     
                  # Variabili
@@ -375,8 +363,8 @@ def test(allegati=True):
                  # 'documento_id':'1',
 
                  # attributi creazione protocollo
-                 'id_titolario': settings.PROTOCOLLO_TITOLARIO_DEFAULT,
-                 'fascicolo_numero': settings.PROTOCOLLO_FASCICOLO_DEFAULT,
+                 'id_titolario': settings.PROT_TITOLARIO_DEFAULT,
+                 'fascicolo_numero': settings.PROT_FASCICOLO_DEFAULT,
                  'fascicolo_anno': datetime.date.today().year,
                   #
                   
@@ -397,9 +385,9 @@ def test(allegati=True):
     # aggiungi 3 allegati
     #
     if allegati:
-        ad1 = wsclient.aggiungi_allegato('test1.pdf', 'documento di &% test1', open(ALLEGATO_EXAMPLE_FILE, 'rb'))
-        ad2 = wsclient.aggiungi_allegato('test2.pdf', 'documento di -:;\\test2', open(ALLEGATO_EXAMPLE_FILE, 'rb'))
-        ad3 = wsclient.aggiungi_allegato('test3.pdf', 'documento di test3', open(ALLEGATO_EXAMPLE_FILE, 'rb'))
+        ad1 = wsclient.aggiungi_allegato('test1.pdf', 'documento di &% test1', open(PROT_ALLEGATO_EXAMPLE_FILE, 'rb'))
+        ad2 = wsclient.aggiungi_allegato('test2.pdf', 'documento di -:;\\test2', open(PROT_ALLEGATO_EXAMPLE_FILE, 'rb'))
+        ad3 = wsclient.aggiungi_allegato('test3.pdf', 'documento di test3', open(PROT_ALLEGATO_EXAMPLE_FILE, 'rb'))
 
     wsclient.is_valid()
     print(wsclient.render_dataXML()) #.decode(PROT_DOC_ENCODING))
@@ -413,5 +401,4 @@ def test(allegati=True):
 
 if __name__ == '__main__':
     test()
-
     # qui aggiungere argparse per fare protocollazioni command line
