@@ -1,9 +1,9 @@
 # win-chrk4d7tc85 must be resolved in /etc/hosts or DNS
 PROT_DOC_ENCODING = 'utf-8'
-PROT_MAX_LABEL_LENGHT = 49
+PROT_MAX_LABEL_LENGHT = 99
 # most common oracle wildcard chars
 PROT_UNALLOWED_CHARS = ['&', '(', ')', ',', '?', '!', '{', '}', '\\', '[', ']',
-                        '-', ':', '~', '|', '$', '<', '>', '*', '%', '_',
+                        ':', '~', '|', '$', '<', '>', '*', '%',
                         ';', '"', "'"]
 
 PROT_TEMPLATE_PATH = 'protocollo_ws/xml_templates'
@@ -23,6 +23,7 @@ PROT_FASCICOLO_DEFAULT = '3'
 PROT_TITOLARIO_DEFAULT = '9095'
 PROT_CODICI_TITOLARI = (
                                ('9095','7.1'),
+                               ('9099', '7.5'),
                              )
 
 PROT_AOO = 'AOO55' # test
