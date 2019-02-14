@@ -5,6 +5,22 @@ Protocollazioni e recupero Documenti da WSArchiPRO con Python
 ````
 pip install git+https://github.com/UniversitaDellaCalabria/pyWSArchiPRO
 ````
+## Creazione Fascicolo
+Il template per la creazione del fasciolo è reperibile qui *wsclient._FASCICOLO_XML*, si può usarne uno diverso.
+````
+from django.conf import settings
+from protocollo_ws.protocollo import Protocollo
+auth_dict = {'wsdl_url' : settings.PROT_URL,
+             'username' : settings.PROT_LOGIN,
+             'password' : settings.PROT_PASSW,
+             'aoo'      : settings.PROT_AOO}
+wsclient = Protocollo(**auth_dict)
+wsclient.connect()
+wsclient.id_titolario = 9099
+wsclient.oggetto = "Una Tantum Docenti e Ricercatori 2018-2019"
+wsclient.soggetto = "Una Tantum Docenti e Ricercatori 2018-2019"
+wsclient.crea_fascicolo(wsclient._FASCICOLO_XML)
+````
 
 ## Esempio di Protocollazione
 ````
