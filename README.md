@@ -76,7 +76,7 @@ wsclient.soggetto = "Una Tantum Docenti e Ricercatori 2018-2019"
 wsclient.crea_fascicolo(wsclient._FASCICOLO_XML)
 ````
 
-#### Protocollare, esempio in Django
+## Protocollare, esempio in Django
 ````
 from django.conf import settings
 from django.utils import timezone
@@ -124,7 +124,7 @@ for modulo in domanda_bando.modulodomandabando_set.all():
 prot_resp = wsclient.protocolla()
 ````
 
-## Altro esempio di protocollazione
+#### Altro esempio di protocollazione
 ````
 import datetime
 
