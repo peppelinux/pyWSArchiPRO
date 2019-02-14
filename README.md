@@ -5,24 +5,8 @@ Protocollazioni e recupero Documenti da WSArchiPRO con Python
 ````
 pip install git+https://github.com/UniversitaDellaCalabria/pyWSArchiPRO
 ````
-## Creazione Fascicolo
-Il template per la creazione del fasciolo è reperibile qui *wsclient._FASCICOLO_XML*, si può usarne uno diverso.
-````
-from django.conf import settings
-from protocollo_ws.protocollo import Protocollo
-auth_dict = {'wsdl_url' : settings.PROT_URL,
-             'username' : settings.PROT_LOGIN,
-             'password' : settings.PROT_PASSW,
-             'aoo'      : settings.PROT_AOO}
-wsclient = Protocollo(**auth_dict)
-wsclient.connect()
-wsclient.id_titolario = 9099
-wsclient.oggetto = "Una Tantum Docenti e Ricercatori 2018-2019"
-wsclient.soggetto = "Una Tantum Docenti e Ricercatori 2018-2019"
-wsclient.crea_fascicolo(wsclient._FASCICOLO_XML)
-````
 
-## Esempio di Protocollazione
+## Esempio di Recupero di un Protocollo
 ````
 from protocollo_ws.protocollo import Protocollo
 wsclient = Protocollo(wsdl_url=PROT_URL,
@@ -75,6 +59,23 @@ PROT_LOGIN = 'USERLOGIN'
 PROT_PASSW = 'USERPASS'
 ````
 
+## Creazione Fascicolo
+Il template per la creazione del fasciolo è reperibile qui *wsclient._FASCICOLO_XML*, si può usarne uno diverso.
+````
+from django.conf import settings
+from protocollo_ws.protocollo import Protocollo
+auth_dict = {'wsdl_url' : settings.PROT_URL,
+             'username' : settings.PROT_LOGIN,
+             'password' : settings.PROT_PASSW,
+             'aoo'      : settings.PROT_AOO}
+wsclient = Protocollo(**auth_dict)
+wsclient.connect()
+wsclient.id_titolario = 9099
+wsclient.oggetto = "Una Tantum Docenti e Ricercatori 2018-2019"
+wsclient.soggetto = "Una Tantum Docenti e Ricercatori 2018-2019"
+wsclient.crea_fascicolo(wsclient._FASCICOLO_XML)
+````
+
 #### Protocollare, esempio in Django
 ````
 from django.conf import settings
@@ -121,6 +122,45 @@ for modulo in domanda_bando.modulodomandabando_set.all():
 # print(wsclient.is_valid())
 # print(wsclient.render_dataXML())
 prot_resp = wsclient.protocolla()
+````
+
+## Altro esempio di protocollazione
+````
+import datetime
+
+from django.conf import settings
+from protocollo_ws.protocollo import Protocollo
+base_dict = {'wsdl_url' : settings.PROT_URL,
+             'username' : settings.PROT_LOGIN,
+             'password' : settings.PROT_PASSW,
+             'aoo'      : settings.PROT_AOO,
+             'oggetto': 'Protocollazione di Test: "(1!?)"',
+             'fascicolo_numero': settings.PROTOCOLLO_FASCICOLO_DEFAULT,
+             'fascicolo_anno': datetime.date.today().year,
+             'id_titolario': settings.PROTOCOLLO_TITOLARIO_DEFAULT}
+
+dipendente_dict = {'matricola_dipendente': 11203,
+                   'denominazione_persona': "Giuseppe De Marco",}
+
+base_dict.update(dipendente_dict)
+wsclient = Protocollo(**base_dict)
+# print(wsclient.render_dataXML())
+
+# aggiungi binario documento principale
+f = open('protocollo_ws/xml_templates/esempi/sample.pdf', 'rb')
+wsclient.aggiungi_docPrinc(f, nome_doc='sample.pdf', tipo_doc='Sample pdf !?£')
+print(wsclient.render_dataXML())
+assert wsclient.is_valid()
+
+f.seek(0)
+wsclient.aggiungi_allegato('test1.pdf', 'documento di &% test1', f)
+f.seek(0)
+wsclient.aggiungi_allegato('test2.pdf', 'documento di -:;test2', f)
+assert wsclient.is_valid()
+print(wsclient.render_dataXML())
+
+prot = wsclient.protocolla()
+print(prot)
 ````
 
 ## Scaricare tutte le domande protocollate relative ad un bando PEO
