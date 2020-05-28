@@ -7,8 +7,8 @@ PROT_UNALLOWED_CHARS = ['&', '(', ')', ',', '?', '!', '{', '}', '\\', '[', ']',
                         ';', '"', "'"]
 
 PROT_TEMPLATE_PATH = 'protocollo_ws/xml_templates'
-PROT_CREAZIONE_FASCICOLO_XML_PATH = '{}/generalizzati/creazione_fascicolo_peo.xml'.format(PROT_TEMPLATE_PATH)
-PROT_TEMPLATE_FLUSSO_ENTRATA_DIPENDENTE_PATH='{}/unical/peo_flusso_entrata.xml_precompilato.j2'.format(PROT_TEMPLATE_PATH)
+PROT_CREAZIONE_FASCICOLO_XML_PATH = '{}/generalizzati/creazione_fascicolo_standard.xml'.format(PROT_TEMPLATE_PATH)
+PROT_TEMPLATE_FLUSSO_ENTRATA_DIPENDENTE_PATH='{}/unical/flusso_entrata.xml_standard.j2'.format(PROT_TEMPLATE_PATH)
 PROT_ALLEGATO_EXAMPLE_FILE='{}/esempi/sample.pdf'.format(PROT_TEMPLATE_PATH)
 
 # Flusso entrata per dipendenti
@@ -22,9 +22,9 @@ PROT_PARAMETRI = [{'nome': 'agd', 'valore': '483'},
 PROT_FASCICOLO_DEFAULT = '3'
 PROT_TITOLARIO_DEFAULT = '9095'
 PROT_CODICI_TITOLARI = (
-                               ('9095','7.1'),
-                               ('9099', '7.5'),
-                             )
+                           ('9095','7.1'),
+                           ('9099', '7.5'),
+                        )
 
 PROT_AOO = 'AOO55' # test
 # PROTOCOLLO_AOO = 'AOO1' # produzione

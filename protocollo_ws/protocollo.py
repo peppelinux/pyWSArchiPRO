@@ -7,6 +7,7 @@ import io
 import os
 
 from zeep import Client
+
 from protocollo_ws.utils import clean_string
 from protocollo_ws.settings import (PROT_TEMPLATE_FLUSSO_ENTRATA_DIPENDENTE_PATH,
                                     PROT_DOC_ENCODING,
@@ -34,15 +35,21 @@ class WSArchiPROClient(object):
                     """
     _ALLEGATO_SPLIT_STRING = "<!-- Allegati -->"
     REQUIRED_ATTRIBUTES = ['aoo',
+                           'agd',
+                           'uo',
+                           'uo_id',
                            'fascicolo_numero',
                            'fascicolo_anno',
                            'id_titolario',
 
                            'oggetto',
-                           'matricola_dipendente',
-                           'denominazione_persona',
-                           'nome_doc',
-                           'tipo_doc']
+                           # 'matricola_dipendente',
+                           'id_persona',
+                           'nome_persona',
+                           'cognome_persona',
+                           'denominazione_persona',]
+                           # 'nome_doc',
+                           # 'tipo_doc']
 
     def __init__(self,
                  wsdl_url,
@@ -50,16 +57,21 @@ class WSArchiPROClient(object):
                  password,
                  template_xml_flusso=open(PROT_TEMPLATE_FLUSSO_ENTRATA_DIPENDENTE_PATH).read(),
                  required_attributes=REQUIRED_ATTRIBUTES,
+                 strictly_required=False,
                  **kwargs):
         """
         il codice titolario in WSArchiPRO corrisponde alla PRIMARYKEY dello schema SQL
         """
 
         for attr in required_attributes:
-            setattr(self, attr, clean_string(kwargs.get(attr)))
+            if strictly_required:
+                if not kwargs.get(attr):
+                    raise Exception(('Value of {} is null').format(attr))
+                setattr(self, attr, clean_string(kwargs[attr]))
+            else:
+                setattr(self, attr, clean_string(kwargs.get(attr)))
 
-        #self.doc_fopen = kwargs.get('fopen')
-        #
+        # self.doc_fopen = kwargs.get('fopen')
 
         # numero viene popolato a seguito di una protocollazione
         if kwargs.get('numero') and kwargs.get('anno'):
@@ -68,9 +80,6 @@ class WSArchiPROClient(object):
         else:
             self.numero = None
             self.anno = None
-
-        if kwargs.get('aoo'):
-            self.aoo = kwargs.get('aoo')
 
         # diventa vero solo se numero/anno sono stati opportunamente estratti e verificati dal server del protocollo
         self.protocollato = False
@@ -284,6 +293,8 @@ class WSArchiPROClient(object):
         allegato.fileName = clean_string(nome)
         allegato.fileContent = self._encode_filestream(fopen)
         allegato_dict['ns0:attach']  = allegato
+
+
 
         self.allegati.append(allegato_dict)
         return self.render_AllegatoXML(allegato_dict)
